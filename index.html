@@ -323,6 +323,18 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
     <div class="lfield"><label>Senha</label><input class="linput" type="password" id="l-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
     <div class="lerr" id="l-err">E-mail ou senha incorretos.</div>
     <button class="lbtn" onclick="doLogin()">Entrar</button>
+    <div style="text-align:center;margin-top:.9rem">
+      <button type="button" onclick="toggleBootstrap()" style="background:none;border:none;color:var(--text3);font-size:.72rem;cursor:pointer;text-decoration:underline">Primeira vez? Criar conta de administradora</button>
+    </div>
+    <div id="bootstrap-box" style="display:none;margin-top:.9rem;padding-top:1rem;border-top:1px solid var(--border)">
+      <div class="lfield"><label>Nome completo</label><input class="linput" id="bs-nome" placeholder="Seu nome"></div>
+      <div class="lfield"><label>Usuário (login)</label><input class="linput" id="bs-user" placeholder="Escolha um usuário, ex: mariana" autocorrect="off" autocapitalize="off"></div>
+      <div class="lfield"><label>Senha</label><input class="linput" type="password" id="bs-pass" placeholder="Mínimo 6 caracteres"></div>
+      <div class="lfield"><label>Código de configuração</label><input class="linput" type="password" id="bs-code" placeholder="Definido em BOOTSTRAP_SETUP_CODE no Supabase"></div>
+      <div class="lerr" id="bs-err" style="display:none"></div>
+      <button class="lbtn" style="background:var(--green)" onclick="doBootstrap()">Criar minha conta</button>
+      <div class="lhint" style="margin-top:.8rem">Essa opção só funciona uma vez — cria a primeira conta de <strong>Gente &amp; Cultura</strong>. Depois disso, novos usuários são criados pela tela "Usuários &amp; Acessos" dentro do sistema.</div>
+    </div>
   </div>
 </div>
 
@@ -352,7 +364,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 </div>
 
 <!-- APP -->
-<div class="app gone" id="scr-app">
+<div class="scr app gone" id="scr-app">
   <header class="hd">
     <button class="hd-menu" onclick="toggleSb()">☰</button>
     <div class="hd-logo"><div class="hd-mark">P</div><span class="hd-name">Pronto</span></div>
@@ -871,6 +883,41 @@ async function doLogout(){
   document.getElementById('scr-login').classList.remove('gone');
   document.getElementById('l-email').value='';
   document.getElementById('l-pass').value='';
+}
+
+function toggleBootstrap(){
+  const box=document.getElementById('bootstrap-box');
+  box.style.display=box.style.display==='none'?'block':'none';
+}
+
+async function doBootstrap(){
+  const nome=document.getElementById('bs-nome').value.trim();
+  const username=document.getElementById('bs-user').value.trim().toLowerCase().replace(/\s+/g,'');
+  const pass=document.getElementById('bs-pass').value;
+  const code=document.getElementById('bs-code').value;
+  const errEl=document.getElementById('bs-err');
+  errEl.style.display='none';
+  if(_sbConfigError||!sb){errEl.textContent='Configuração do Supabase ausente ou inválida.';errEl.style.display='block';return}
+  if(!nome||!username||!pass||!code){errEl.textContent='Preencha todos os campos.';errEl.style.display='block';return}
+  if(pass.length<6){errEl.textContent='Senha deve ter ao menos 6 caracteres.';errEl.style.display='block';return}
+  if(!/^[a-z0-9._-]+$/.test(username)){errEl.textContent='Usuário inválido. Use apenas letras, números, ponto ou traço.';errEl.style.display='block';return}
+  const btn=document.querySelector('#bootstrap-box .lbtn');
+  if(btn){btn.disabled=true;btn.textContent='Criando...'}
+  try{
+    const{data,error}=await sb.functions.invoke('admin-users',{body:{action:'bootstrap_admin',setup_code:code,username,password:pass,nome}});
+    if(error)throw new Error(error.message||'Falha ao criar conta');
+    if(data?.error)throw new Error(data.error);
+  }catch(e){
+    errEl.textContent=e.message;errEl.style.display='block';
+    if(btn){btn.disabled=false;btn.textContent='Criar minha conta'}
+    return;
+  }
+  if(btn){btn.disabled=false;btn.textContent='Criar minha conta'}
+  toast('Conta criada com sucesso! Entrando...','ok');
+  document.getElementById('l-email').value=username;
+  document.getElementById('l-pass').value=pass;
+  toggleBootstrap();
+  await doLogin();
 }
 
 function applyP(){

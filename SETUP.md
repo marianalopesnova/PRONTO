@@ -14,35 +14,9 @@ Siga os passos nesta ordem. Em cada etapa marcada com **⏸ preciso de você**, 
 2. Abra o arquivo [supabase/schema.sql](supabase/schema.sql) deste projeto, copie todo o conteúdo, cole no editor e clique em **Run**.
 3. Confirme que não deu erro (deve aparecer "Success. No rows returned").
 
-## 3. Criar os usuários iniciais
+## 3. Publicar a Edge Function (gestão de usuários)
 
-O Supabase Auth não permite inserir usuários com senha diretamente por SQL — precisa ser pela tela ou pela API.
-
-1. Menu lateral → **Authentication** → **Users** → **Add user** → **Create new user**.
-2. Para cada uma das 7 pessoas abaixo, crie um usuário com:
-   - **Email**: `usuario@pronto.internal` (troque `usuario` pelo nome de usuário desejado)
-   - **Password**: a senha que a pessoa vai usar para logar
-   - Marque **Auto Confirm User** (senão o Supabase vai querer mandar e-mail de confirmação para um domínio que não existe)
-
-   | Username (parte antes do @) | Perfil |
-   |---|---|
-   | `gestao` | Gestão |
-   | `gc` | Gente & Cultura |
-   | `karine` | Colaborador |
-   | `claudia` | Colaborador |
-   | `elizabete` | Colaborador |
-   | `rafaela` | Colaborador |
-   | `paula` | Colaborador |
-
-   **Escolha senhas novas e fortes agora** — não reutilize `pronto123`/`nova2026`, que já estavam expostas no arquivo original.
-
-3. Depois de criar cada um, clique nele na lista e copie o **User UID** (um UUID tipo `a1b2c3d4-...`).
-
-**⏸ preciso de você**: me avise quando os 7 usuários estiverem criados. Se preferir, você mesma pode preencher o [supabase/seed.sql](supabase/seed.sql) trocando cada `UUID-DE-...` pelo UID copiado, e rodar esse arquivo no SQL Editor (mesmo processo do passo 2). Também posso montar o SQL final se você me passar os 7 UIDs.
-
-## 4. Publicar a Edge Function (gestão de usuários)
-
-Essa function roda no servidor do Supabase com permissão de administrador — é o que permite ao G&C criar usuários e redefinir senhas com segurança (sem expor uma chave mestra no site).
+Essa function roda no servidor do Supabase com permissão de administrador — é o que permite criar usuários e redefinir senhas com segurança (sem expor uma chave mestra no site).
 
 **Opção A — pelo painel (mais simples):**
 1. Menu lateral → **Edge Functions** → **Deploy a new function** → nomeie `admin-users`.
@@ -57,7 +31,23 @@ supabase functions deploy admin-users
 ```
 (o "project-ref" aparece na URL do seu projeto: `https://SEU-PROJECT-REF.supabase.co`)
 
-Não é preciso configurar nenhuma variável de ambiente manualmente — o Supabase já injeta `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` automaticamente dentro de toda Edge Function.
+Não é preciso configurar `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` manualmente — o Supabase já injeta isso automaticamente em toda Edge Function.
+
+### 3.1 Definir o código de configuração (bootstrap da 1ª conta)
+
+O sistema tem uma tela de "Criar conta de administradora" no próprio login (não precisa mexer no painel do Supabase para isso), protegida por um código secreto que só existe no servidor:
+
+1. Menu lateral → **Edge Functions** → `admin-users` → aba **Secrets** (ou **Settings**).
+2. Adicione um secret chamado `BOOTSTRAP_SETUP_CODE` com um valor forte à sua escolha (ex: uma frase longa e aleatória). Guarde esse valor só para você.
+3. Esse código só serve para criar a **primeira** conta (Gente & Cultura) — depois que ela existir, essa opção fica bloqueada automaticamente e novos usuários passam a ser criados pela tela "Usuários & Acessos" dentro do sistema, já logada.
+
+## 4. Criar sua conta pelo próprio sistema
+
+1. Abra o `index.html` (depois que eu colar suas credenciais no passo 5) → tela de login → link **"Primeira vez? Criar conta de administradora"**.
+2. Preencha seu nome, o usuário que você quiser (não precisa ser "gc"), uma senha e o código de configuração do passo 3.1.
+3. Pronto — você entra automaticamente com perfil de Gente & Cultura e, a partir daí, cria as demais colaboradoras (`karine`, `claudia`, `elizabete`, `rafaela`, `paula`, `gestao`) pela tela "Usuários & Acessos" (sem precisar do painel do Supabase).
+
+> O arquivo [supabase/seed.sql](supabase/seed.sql) não é mais necessário com esse fluxo — ele fica só como alternativa caso um dia você prefira cadastrar usuários direto por SQL.
 
 ## 5. Pegar as credenciais do projeto
 

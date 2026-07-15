@@ -12,6 +12,42 @@ const admin = createClient(SUPABASE_URL, SERVICE_KEY)
 
 Deno.serve(async (req) => {
   try {
+    const body = await req.json()
+    const { action } = body
+
+    // ═══ BOOTSTRAP: cria a primeira conta de administradora (G&C) direto pelo
+    // app, sem exigir uma sessão já logada. Protegido por um código secreto que
+    // só existe no ambiente da function (nunca no front-end) e só funciona
+    // enquanto nenhuma conta 'gc' existir ainda — depois disso, este caminho
+    // fica permanentemente bloqueado e novos usuários passam a ser criados
+    // pela tela "Usuários & Acessos" (ação create_user, abaixo).
+    if (action === 'bootstrap_admin') {
+      const { setup_code, username, password, nome } = body
+      const expected = Deno.env.get('BOOTSTRAP_SETUP_CODE')
+      if (!expected) return json({ error: 'Bootstrap não configurado no servidor (BOOTSTRAP_SETUP_CODE ausente)' }, 500)
+      if (!setup_code || setup_code !== expected) return json({ error: 'Código de configuração incorreto' }, 403)
+
+      const { count } = await admin.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'gc')
+      if ((count ?? 0) > 0) return json({ error: 'Já existe uma conta de Gente & Cultura. Peça para ela criar seu usuário em Usuários & Acessos.' }, 409)
+
+      if (!username || !password || !nome) return json({ error: 'Preencha nome, usuário e senha' }, 400)
+      const email = `${username}@pronto.internal`
+      const { data: created, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true })
+      if (error) return json({ error: error.message }, 400)
+
+      const { error: profileErr } = await admin.from('profiles').insert({
+        id: created.user.id, username, role: 'gc', colab_id: null, nome,
+      })
+      if (profileErr) return json({ error: profileErr.message }, 400)
+
+      await admin.from('log_auditoria').insert({
+        usuario: nome, email: username, campo: 'usuário', valor_anterior: '—',
+        valor_novo: 'Conta de administradora criada (bootstrap)', por: nome,
+      })
+      return json({ ok: true, id: created.user.id })
+    }
+
+    // ═══ Demais ações exigem uma sessão de quem já está logado como 'gc' ═══
     const authHeader = req.headers.get('Authorization') ?? ''
     const jwt = authHeader.replace('Bearer ', '')
     const { data: { user: caller } } = await admin.auth.getUser(jwt)
@@ -22,9 +58,6 @@ Deno.serve(async (req) => {
     if (callerProfile?.role !== 'gc') {
       return json({ error: 'Apenas o Gente & Cultura pode gerenciar usuários' }, 403)
     }
-
-    const body = await req.json()
-    const { action } = body
 
     if (action === 'create_user') {
       const { username, password, role, nome, colab_id, cargo, jornada } = body
