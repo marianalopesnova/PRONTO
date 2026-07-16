@@ -1637,8 +1637,8 @@ function renderCal(){
 }
 
 function renderStats(){
-  const{vy:y,vm:m}=G;const D=dim(y,m);let sa=0,do_=0,fc=0;
-  G.colabs.forEach(c=>{for(let d=1;d<=D;d++){const st=gS(c.id,dky(y,m,d));if(st==='sab')sa++;else if(st==='dom')do_++;else if(st==='fcomp')fc++}});
+  const{vy:y,vm:m}=G;const D=dim(y,m);let sa=0,do_=0,fc=0,ds=0;
+  G.colabs.forEach(c=>{for(let d=1;d<=D;d++){const st=gS(c.id,dky(y,m,d));if(st==='sab')sa++;else if(st==='dom')do_++;else if(st==='fcomp')fc++;else if(st==='dsr'||st==='dsr-dom')ds++}});
   const{al}=valAll();const er=al.filter(a=>a.lv==='error').length;const wa=al.filter(a=>a.lv==='warning').length;
   document.getElementById('stats').innerHTML=`
     <div class="scard"><div class="sc-lbl">Sábados ▲</div><div class="sc-val">${sa}</div><div class="sc-sub">Escala CCT</div></div>
