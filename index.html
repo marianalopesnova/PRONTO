@@ -256,8 +256,12 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
   .chip{padding:.18rem .3rem;font-size:.6rem;margin-bottom:.13rem;border-radius:5px}
   .chip span:last-child{display:none}
   .hd-name{font-size:.82rem}
-  .hnav{padding:.35rem .55rem;font-size:.74rem}
+  .hnav{padding:.4rem .5rem;font-size:.74rem}
+  .hnav-lbl{display:none}
+  .hr{gap:.35rem}
   .hr .huser .huname,.hr .huser .hbadge{display:none}
+  #gpill,.zoom-panel{display:none !important}
+  .huser{padding:.28rem .4rem}
   .dupban{padding:.6rem .85rem;font-size:.75rem}
   /* Login mobile */
   .lcard{padding:2rem 1.4rem;border-radius:16px;width:min(440px,96vw)}
@@ -368,9 +372,9 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
     <button class="hd-menu" onclick="toggleSb()">☰</button>
     <div class="hd-logo"><img src="logo.png" alt="Pronto" style="height:20px;width:auto;background:#fff;border-radius:6px;padding:4px 8px"></div>
     <div class="hd-sep"></div>
-    <button class="hnav on" id="nv-e" onclick="swV('e',this)">🗓 Escala</button>
-    <button class="hnav" id="nv-a" onclick="swV('a',this)">✅ Aprovação <span id="pbadge"></span></button>
-    <button class="hnav" id="nv-ac" onclick="swV('ac',this)" style="display:none">⚙ Usuários</button>
+    <button class="hnav on" id="nv-e" onclick="swV('e',this)">🗓 <span class="hnav-lbl">Escala</span></button>
+    <button class="hnav" id="nv-a" onclick="swV('a',this)">✅ <span class="hnav-lbl">Aprovação</span> <span id="pbadge"></span></button>
+    <button class="hnav" id="nv-ac" onclick="swV('ac',this)" style="display:none">⚙ <span class="hnav-lbl">Usuários</span></button>
     <div class="hr">
       <div id="gpill"></div>
       <!-- ACESSIBILIDADE -->
