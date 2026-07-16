@@ -940,13 +940,13 @@ function renderColabView(){
   const c=G.colabs.find(x=>x.id===CU.colabId);
   if(!c)return;
 
+  const{vy:y,vm:m}=G;
   const mesLabel=document.getElementById('col-mes-label');
   if(mesLabel)mesLabel.textContent=`${MONTHS[m]} ${y}`;
   document.getElementById('col-huser').innerHTML=`
     <div class="hav">${c.nome.slice(0,2).toUpperCase()}</div>
     <span class="huname">${c.nome}</span>`;
 
-  const{vy:y,vm:m}=G;
   const D=dim(y,m);
   const cienciaKey=`ciencia-${c.id}-${y}-${String(m+1).padStart(2,'0')}`;
   const jaCiencia=G.ciencias?.[cienciaKey];
