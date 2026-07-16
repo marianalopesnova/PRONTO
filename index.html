@@ -35,6 +35,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 /* ────────────────── SCREENS ────────────────── */
 .scr{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:30;background:var(--bg)}
 .scr.gone{display:none !important}
+#scr-app.gone{display:none !important}
 
 /* ────────────────── LOGIN ────────────────── */
 .login-bg{position:absolute;inset:0;background:linear-gradient(140deg,#ddeeff 0%,#eef3fb 45%,#e4edfb 100%)}
@@ -362,7 +363,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 </div>
 
 <!-- APP -->
-<div class="scr app gone" id="scr-app">
+<div class="app gone" id="scr-app">
   <header class="hd">
     <button class="hd-menu" onclick="toggleSb()">☰</button>
     <div class="hd-logo"><img src="logo.png" alt="Pronto" style="height:20px;width:auto;background:#fff;border-radius:6px;padding:4px 8px"></div>
