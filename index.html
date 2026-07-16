@@ -828,8 +828,8 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 // ═══ SUPABASE ═══
 // Cole aqui a URL e a anon key do seu projeto (Settings → API no dashboard do Supabase).
 // A anon key é segura para ficar pública — a proteção real vem das políticas RLS do banco.
-const SUPABASE_URL = 'COLE_A_URL_DO_SEU_PROJETO_SUPABASE_AQUI';
-const SUPABASE_ANON_KEY = 'COLE_A_ANON_KEY_DO_SEU_PROJETO_AQUI';
+const SUPABASE_URL = 'https://lhjkrpgikxpsjynyhvkv.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxoamtycGdpa3hwc2p5bnlodmt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxMzMzNzYsImV4cCI6MjA5OTcwOTM3Nn0.AGy_OzunS6Y5dEwWl96l9MBDnZKXMzkMJS6_ASnIAlg';
 let sb=null,_sbConfigError=null;
 try{sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY)}catch(e){_sbConfigError=e.message}
 const AUTH_DOMAIN = '@pronto.internal'; // e-mail sintético para permitir login por "usuário" em vez de e-mail
