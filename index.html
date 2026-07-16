@@ -722,14 +722,20 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
       <div class="mfield"><label class="mlbl">Senha inicial</label><input class="minp" id="nu-pass" type="password" placeholder="Mín. 6 caracteres"></div>
       <div class="mfield" id="nu-role-field">
         <label class="mlbl">Perfil de acesso</label>
-        <select class="minp" id="nu-role">
+        <select class="minp" id="nu-role" onchange="atualizarCamposNovoUsuario()">
           <option value="gestora">Gestão</option>
           <option value="gc">Gente &amp; Cultura</option>
           <option value="colaborador" selected>Colaborador</option>
         </select>
       </div>
-      <div class="mfield"><label class="mlbl">Cargo</label><input class="minp" id="nu-cargo" placeholder="Ex: Analista"></div>
-      <div class="mfield">
+      <div class="mfield" id="nu-colab-vinculo-field" style="grid-column:1/-1">
+        <label class="mlbl">Colaboradora já cadastrada na escala?</label>
+        <select class="minp" id="nu-colab-vinculo" onchange="atualizarCamposNovoUsuario()">
+          <option value="">— Criar uma colaboradora nova —</option>
+        </select>
+      </div>
+      <div class="mfield" id="nu-cargo-field"><label class="mlbl">Cargo</label><input class="minp" id="nu-cargo" placeholder="Ex: Analista"></div>
+      <div class="mfield" id="nu-jornada-field">
         <label class="mlbl">Jornada diária</label>
         <select class="minp" id="nu-jornada">
           <option value="8">8h (44h semana)</option>
@@ -2364,8 +2370,25 @@ function openMAcesso(){
   document.getElementById('nu-pass').value='';
   document.getElementById('nu-cargo').value='';
   document.getElementById('nu-role').value='colaborador';
+  // Só oferece colaboradoras que ainda não têm login vinculado (evita duplicar)
+  const vinculados=new Set((G.profiles||[]).map(p=>p.colab_id).filter(Boolean));
+  const disponiveis=G.colabs.filter(c=>!vinculados.has(c.id));
+  const sel=document.getElementById('nu-colab-vinculo');
+  sel.innerHTML='<option value="">— Criar uma colaboradora nova —</option>'+
+    disponiveis.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
   document.getElementById('nu-err').style.display='none';
+  atualizarCamposNovoUsuario();
   document.getElementById('m-nu').classList.add('open');
+}
+
+function atualizarCamposNovoUsuario(){
+  const role=document.getElementById('nu-role').value;
+  const isColab=role==='colaborador';
+  const vinculoId=document.getElementById('nu-colab-vinculo').value;
+  document.getElementById('nu-colab-vinculo-field').style.display=isColab?'block':'none';
+  const criandoNova=isColab&&!vinculoId;
+  document.getElementById('nu-cargo-field').style.display=criandoNova?'block':'none';
+  document.getElementById('nu-jornada-field').style.display=criandoNova?'block':'none';
 }
 
 async function salvarNovoUsuario(){
@@ -2381,13 +2404,15 @@ async function salvarNovoUsuario(){
   if(G.profiles.some(p=>p.username===username)){errEl.textContent='Este usuário já está cadastrado.';errEl.style.display='block';return}
   if(!/^[a-z0-9._-]+$/.test(username)){errEl.textContent='Usuário inválido. Use apenas letras, números, ponto ou traço.';errEl.style.display='block';return}
   errEl.style.display='none';
-  const newId=role==='colaborador'?'c'+Date.now():null;
+  const vinculoId=document.getElementById('nu-colab-vinculo').value;
+  const isNewColab=role==='colaborador'&&!vinculoId;
+  const colabId=role==='colaborador'?(vinculoId||'c'+Date.now()):null;
   try{
-    await callAdminUsers({action:'create_user',username,password:pass,role,nome,colab_id:newId,cargo:cargo||null,jornada});
+    await callAdminUsers({action:'create_user',username,password:pass,role,nome,colab_id:colabId,is_new_colab:isNewColab,cargo:cargo||null,jornada});
   }catch(e){errEl.textContent=e.message;errEl.style.display='block';return}
   await refreshAcessos();
-  if(role==='colaborador'){
-    G.colabs.push({id:newId,nome,jornada,cargo:cargo||'—',admissao:new Date().toISOString().slice(0,10),contrato:'CLT'});
+  if(isNewColab){
+    G.colabs.push({id:colabId,nome,jornada,cargo:cargo||'—',admissao:new Date().toISOString().slice(0,10),contrato:'CLT'});
   }
   cM('m-nu');
   renderAcessos();

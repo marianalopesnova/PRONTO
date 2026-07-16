@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'create_user') {
-      const { username, password, role, nome, colab_id, cargo, jornada } = body
+      const { username, password, role, nome, colab_id, is_new_colab, cargo, jornada } = body
       const email = `${username}@pronto.internal`
       const { data: created, error } = await admin.auth.admin.createUser({
         email, password, email_confirm: true,
@@ -81,7 +81,10 @@ Deno.serve(async (req) => {
       })
       if (profileErr) return json({ error: profileErr.message }, 400)
 
-      if (colab_id) {
+      // Só cria/sobrescreve a colaboradora se for realmente nova — se colab_id
+      // aponta para uma colaboradora já cadastrada (pela Gestão, por exemplo),
+      // apenas vincula o login a ela sem tocar nos dados existentes.
+      if (colab_id && is_new_colab) {
         await admin.from('colaboradores').upsert({ id: colab_id, nome, cargo, jornada: jornada || 8 })
       }
 
