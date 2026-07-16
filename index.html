@@ -312,11 +312,10 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
     <div class="login-blob" style="width:280px;height:280px;bottom:-60px;left:-60px;background:rgba(13,43,85,.08)"></div>
   </div>
   <div class="lcard fup">
-    <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:.5rem;margin-bottom:2.2rem">
-      <div class="lmark" style="width:52px;height:52px;font-size:1rem;border-radius:14px">P</div>
+    <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:.7rem;margin-bottom:2.2rem">
+      <img src="logo.png" alt="Pronto" style="width:200px;height:auto">
       <div>
-        <div class="lname" style="font-size:1.4rem;letter-spacing:-.03em">PRONTO</div>
-        <div class="lsub" style="font-size:.82rem;margin-top:4px">Gerenciador de Escala &nbsp;·&nbsp; Nova Promotora</div><div style="font-size:.62rem;color:var(--text3);margin-top:4px">v2.0 · Jul 2026</div>
+        <div class="lsub" style="font-size:.82rem">Gerenciador de Escala &nbsp;·&nbsp; Nova Promotora</div><div style="font-size:.62rem;color:var(--text3);margin-top:4px">v2.0 · Jul 2026</div>
       </div>
     </div>
     <div class="lfield"><label>Usuário</label><input class="linput" id="l-email" type="text" placeholder="Ex: karine" autocomplete="username" autocorrect="off" autocapitalize="off"></div>
@@ -343,8 +342,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
   <div style="width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden">
     <!-- Header -->
     <div style="background:var(--navy);padding:0 1rem;height:var(--hh);display:flex;align-items:center;gap:.6rem;box-shadow:0 3px 12px rgba(13,43,85,.25);flex-shrink:0;z-index:10">
-      <div class="hd-mark">P</div>
-      <span style="font-size:.88rem;font-weight:800;color:#fff">Pronto</span>
+      <img src="logo.png" alt="Pronto" style="height:20px;width:auto;background:#fff;border-radius:6px;padding:4px 8px">
       <div class="hd-sep"></div>
       <span style="font-size:.78rem;color:rgba(255,255,255,.55)" id="col-mes-label">Minha Escala</span>
       <div style="margin-left:auto;display:flex;align-items:center;gap:.6rem">
@@ -367,7 +365,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 <div class="scr app gone" id="scr-app">
   <header class="hd">
     <button class="hd-menu" onclick="toggleSb()">☰</button>
-    <div class="hd-logo"><div class="hd-mark">P</div><span class="hd-name">Pronto</span></div>
+    <div class="hd-logo"><img src="logo.png" alt="Pronto" style="height:20px;width:auto;background:#fff;border-radius:6px;padding:4px 8px"></div>
     <div class="hd-sep"></div>
     <button class="hnav on" id="nv-e" onclick="swV('e',this)">🗓 Escala</button>
     <button class="hnav" id="nv-a" onclick="swV('a',this)">✅ Aprovação <span id="pbadge"></span></button>
