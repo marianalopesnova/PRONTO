@@ -404,7 +404,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
     <div id="sb-ru" style="display:none">
       <div class="ruleitem"><div class="rdot" style="background:var(--red)"></div><span><strong>Exatamente 2 por turno</strong> — sábado e domingo precisam ter exatamente 2 colaboradoras escaladas. Bloqueia.</span></div>
       <div class="ruleitem"><div class="rdot" style="background:var(--red)"></div><span><strong>Domingos alternados</strong> — proibido 2 domingos seguidos (CLT art. 386). Bloqueia.</span></div>
-      <div class="ruleitem"><div class="rdot" style="background:var(--red)"></div><span><strong>5x2 obrigatório</strong> — máx. 5 dias/semana. O 6º dia bloqueia. Mín. 2 folgas: DSR + F.Comp (ou DSR Dom).</span></div>
+      <div class="ruleitem"><div class="rdot" style="background:var(--red)"></div><span><strong>5x2 obrigatório</strong> — máx. 5 dias/semana. O 6º dia bloqueia. Mín. 2 folgas: Folga + F.Comp (ou Folga Dom).</span></div>
       <div class="ruleitem"><div class="rdot" style="background:var(--red)"></div><span><strong>F.Comp na mesma semana</strong> — quem trabalha FDS recebe folga dentro da mesma semana. Bloqueia se ultrapassar.</span></div>
       <div class="ruleitem"><div class="rdot" style="background:var(--red)"></div><span><strong>Intervalo 11h</strong> — entre fim do plantão e próximo turno.</span></div>
       <div class="ruleitem"><div class="rdot" style="background:var(--red)"></div><span><strong>Máx. 10h/dia</strong> — jornada + 2h extras (CLT).</span></div>
@@ -756,7 +756,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 <div class="mov" id="m-assist">
   <div class="mbox" style="width:min(520px,96vw);max-height:90vh;overflow-y:auto">
     <h3>✨ Assistente de Montagem</h3>
-    <p style="font-size:.78rem;color:var(--text2);margin-bottom:1rem;line-height:1.55">Defina as duplas de cada fim de semana. O sistema preenche os dias úteis, distribui as folgas compensatórias e os DSR automaticamente, respeitando todas as regras CLT.</p>
+    <p style="font-size:.78rem;color:var(--text2);margin-bottom:1rem;line-height:1.55">Defina as duplas de cada fim de semana. O sistema preenche os dias úteis e distribui as folgas (compensatórias e semanais) automaticamente, respeitando todas as regras CLT.</p>
 
     <!-- Seleção do mês -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:1rem">
@@ -1154,8 +1154,8 @@ const SC={
   sab:{label:'Sáb ▲',cls:'cs-s',isWork:true,isWE:true},
   dom:{label:'Dom ▲',cls:'cs-d',isWork:true,isWE:true,isDom:true},
   fcomp:{label:'F.Comp',cls:'cs-f',isComp:true},
-  dsr:{label:'DSR',cls:'cs-r',isRest:true},
-  'dsr-dom':{label:'DSR Dom',cls:'cs-rd',isRest:true,isDom:true},
+  dsr:{label:'Folga',cls:'cs-r',isRest:true},
+  'dsr-dom':{label:'Folga (Dom)',cls:'cs-rd',isRest:true,isDom:true},
   '':{label:'',cls:''},
 };
 let G={
@@ -1343,7 +1343,7 @@ function valAll(){
         const temDSR=dias.some(x=>x.k>=ws&&x.k<=aD(ws,6)&&(x.st==='dsr'||x.st==='dsr-dom'));
         const temFolga2=dias.some(x=>x.k>=ws&&x.k<=aD(ws,6)&&(x.st==='fcomp'||x.st==='dsr'||x.st==='dsr-dom'));
         const totalFolgas=dias.filter(x=>x.k>=ws&&x.k<=aD(ws,6)&&(x.st==='fcomp'||x.st==='dsr'||x.st==='dsr-dom')).length;
-        if(!temDSR){al.push({lv:'error',msg:`${c.nome}: Semana de ${ws} — 5 dias sem DSR registrado (descanso obrigatório)`});ds.forEach(k=>mk(k,'error'))}
+        if(!temDSR){al.push({lv:'error',msg:`${c.nome}: Semana de ${ws} — 5 dias sem folga registrada (descanso obrigatório)`});ds.forEach(k=>mk(k,'error'))}
         if(totalFolgas<2){al.push({lv:'error',msg:`${c.nome}: Semana de ${ws} — apenas 1 folga (mín. 2 folgas/semana na escala 5x2)`});ds.forEach(k=>mk(k,'error'))}
       }
     });
@@ -1377,7 +1377,7 @@ function valAll(){
     Object.entries(wksDSR).forEach(([ws,{dias:wDias,temDSR}])=>{
       const diasTrabalhados=wDias.filter(k=>SC[gS(c.id,k)]?.isWork);
       if(diasTrabalhados.length&&!temDSR){
-        al.push({lv:'error',msg:`${c.nome}: Semana de ${ws} sem DSR registrado — descanso semanal obrigatório`});
+        al.push({lv:'error',msg:`${c.nome}: Semana de ${ws} sem folga registrada — descanso semanal obrigatório`});
         diasTrabalhados.forEach(k=>mk(k,'error'));
       }
     });
@@ -1420,7 +1420,7 @@ function valCell(cid,k,st,ini,fim){
   // Anti 6x1
   const dw=dwK(k),ws=aD(k,-dw);let cnt=0;for(let i=0;i<7;i++){const d2=aD(ws,i);if(d2!==k&&SC[gS(cid,d2)]?.isWork)cnt++}
   if(cnt>=5)msgs.push({lv:'error',msg:`Bloqueado: ${cnt} dias já trabalhados nessa semana — regra 5x2 (máx. 5 dias, mín. 2 folgas)`});
-  else if(cnt===4)msgs.push({lv:'warning',msg:'5º dia na semana — garanta 2 folgas (DSR + F.Comp ou DSR Dom)'});
+  else if(cnt===4)msgs.push({lv:'warning',msg:'5º dia na semana — garanta 2 folgas (Folga + F.Comp ou Folga Dom)'});
 
   // NOVA: exatamente 2 por turno
   const dw2=dwK(k);
@@ -1670,7 +1670,7 @@ function renderStats(){
     <div class="scard"><div class="sc-lbl">Sábados ▲</div><div class="sc-val">${sa}</div><div class="sc-sub">Escala CCT</div></div>
     <div class="scard"><div class="sc-lbl">Domingos ▲</div><div class="sc-val">${do_}</div><div class="sc-sub">Escala CCT</div></div>
     <div class="scard"><div class="sc-lbl">F.Comp</div><div class="sc-val">${fc}</div><div class="sc-sub">Folgas dadas</div></div>
-    <div class="scard"><div class="sc-lbl">DSR</div><div class="sc-val">${ds}</div><div class="sc-sub">Descansos</div></div>
+    <div class="scard"><div class="sc-lbl">Folga</div><div class="sc-val">${ds}</div><div class="sc-sub">Descansos</div></div>
     <div class="scard" style="${er>0?'border-color:var(--red-bd);background:var(--red-bg)':wa>0?'border-color:var(--amber-bd);background:var(--amber-bg)':'border-color:var(--green-bd);background:var(--green-bg)'}">
       <div class="sc-lbl">CLT</div>
       <div class="sc-val" style="font-size:1rem;color:${er>0?'var(--red)':wa>0?'var(--amber)':'var(--green)'};line-height:1.2">${er>0?er+' violação'+(er>1?'ões':''):wa>0?wa+' alerta'+(wa>1?'s':''):'OK ✓'}</div>
@@ -2695,7 +2695,7 @@ function importarExcel(file){
         if(!isNaN(n)&&n>=1&&n<=31)dayMap.push({col:c,day:n});
       }
 
-      const SC_MAP={'Trabalha':'trabalha','Sáb ▲':'sab','Dom ▲':'dom','F.Comp':'fcomp','DSR':'dsr','DSR Dom':'dsr-dom'};
+      const SC_MAP={'Trabalha':'trabalha','Sáb ▲':'sab','Dom ▲':'dom','F.Comp':'fcomp','Folga':'dsr','Folga (Dom)':'dsr-dom','DSR':'dsr','DSR Dom':'dsr-dom'};
       let importados=0,erros=[];
 
       for(let r=dayRow+1;r<data.length;r++){
