@@ -1406,6 +1406,12 @@ function valCell(cid,k,st,ini,fim){
   const msgs=[];
   if(!SC[st]?.isWork)return msgs;
 
+  const colab=G.colabs.find(x=>x.id===cid);
+  if(colab&&colab.status&&colab.status!=='ativo'){
+    msgs.push({lv:'error',msg:`Bloqueado: ${colab.nome} está ${colab.status==='ferias'?'de férias':'afastada'} — não pode ser escalada para trabalhar`});
+    return msgs;
+  }
+
   if(ini&&fim){const h=dH(ini,fim);if(h>10)msgs.push({lv:'error',msg:`${h.toFixed(1)}h excede 10h/dia`});if(h<=0)msgs.push({lv:'error',msg:'Saída deve ser após entrada'})}
 
   // Domingos alternados
@@ -2556,7 +2562,6 @@ function montarPlano(){
 
   const optTrabalha=document.getElementById('ast-trabalha').checked;
   const optFcomp=document.getElementById('ast-fcomp').checked;
-  const optDsr=false; // DSR removido da escala de plantões
 
   // Coletar seleções de FDS
   const container=document.getElementById('ast-fds');
@@ -2594,7 +2599,7 @@ function montarPlano(){
     colabsAtivos().forEach(c=>{
       if(dw===6){ // sábado
         if((sabSels[ds]||[]).includes(c.id)) plan[c.id][k]='sab';
-        else if(optDsr) plan[c.id][k]='dsr';
+        else plan[c.id][k]='dsr';
       } else if(dw===0){ // domingo
         if((domSels[ds]||[]).includes(c.id)) plan[c.id][k]='dom';
         else plan[c.id][k]='dsr-dom';
