@@ -1753,19 +1753,33 @@ function renderCobertura(){
   }
   mesEl.textContent=`${MONTHS[m]} ${y} · ${fds.length} fins de semana`;
 
+  // Legenda (evita repetir texto em cada célula)
+  let legend=document.getElementById('cob-legend');
+  if(!legend){
+    legend=document.createElement('div');
+    legend.id='cob-legend';
+    legend.style.cssText='display:flex;align-items:center;gap:1rem;padding:.55rem 1rem;border-bottom:1px solid var(--border);font-size:.7rem;color:var(--text2)';
+    document.getElementById('cob-table').parentElement.insertBefore(legend,document.getElementById('cob-table'));
+  }
+  legend.innerHTML=`
+    <span style="display:flex;align-items:center;gap:.3rem"><span style="width:16px;height:16px;border-radius:50%;background:var(--s-sab-bg);border:1px solid var(--s-sab-bd)"></span>Trabalhou</span>
+    <span style="display:flex;align-items:center;gap:.3rem"><span style="width:16px;height:16px;border-radius:50%;background:var(--bg);border:1px solid var(--border)"></span>Folga</span>
+    <span style="margin-left:auto;color:var(--text3)">S = sábado &nbsp;·&nbsp; D = domingo</span>`;
+
   // Header da tabela
   thead.innerHTML=`<tr style="background:var(--bg)">
     <th style="padding:.5rem .85rem;text-align:left;font-size:.65rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border)">Colaboradora</th>
     ${fds.map((f,i)=>`
-      <th style="padding:.5rem .6rem;text-align:center;font-size:.65rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);min-width:72px">
+      <th style="padding:.5rem .6rem;text-align:center;font-size:.65rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);min-width:64px">
         Sem ${i+1}<br>
-        <span style="font-size:.62rem;font-weight:400;color:var(--text3)">Sáb ${f.sab}${f.dom?' · Dom '+f.dom:''}</span>
+        <span style="font-size:.6rem;font-weight:400;color:var(--text3);text-transform:none">${f.sab}${f.dom?'/'+f.dom:''}/${m+1}</span>
       </th>`).join('')}
     <th style="padding:.5rem .7rem;text-align:center;font-size:.65rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border)">Total</th>
   </tr>`;
 
   // Linhas por colaboradora
   tbody.innerHTML='';
+  const dotStyle=(on,bg,bd,tx)=>`display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:.6rem;font-weight:700;${on?`background:${bg};color:${tx};border:1px solid ${bd}`:'background:var(--bg);color:var(--text3);border:1px solid var(--border)'}`;
   G.colabs.forEach((col,ci)=>{
     const tr=document.createElement('tr');
     tr.style.cssText=`border-bottom:1px solid var(--border);background:${ci%2===0?'var(--white)':'var(--off)'}`;
@@ -1776,20 +1790,14 @@ function renderCobertura(){
       const trabSab=sabSt==='sab';
       const trabDom=domSt==='dom';
       if(trabSab||trabDom)totalFDS++;
-      const sabCell=trabSab
-        ?`<span style="display:inline-block;background:var(--s-sab-bg);color:var(--s-sab-tx);border:1px solid var(--s-sab-bd);border-radius:5px;padding:2px 7px;font-size:.65rem;font-weight:700">S▲</span>`
-        :`<span style="display:inline-block;color:var(--text3);font-size:.7rem">—</span>`;
-      const domCell=f.dom
-        ?(trabDom
-          ?`<span style="display:inline-block;background:var(--s-dom-bg);color:var(--s-dom-tx);border:1px solid var(--s-dom-bd);border-radius:5px;padding:2px 7px;font-size:.65rem;font-weight:700">D▲</span>`
-          :`<span style="display:inline-block;color:var(--text3);font-size:.7rem">—</span>`)
-        :'';
+      const sabDot=`<span title="Sábado ${f.sab}" style="${dotStyle(trabSab,'var(--s-sab-bg)','var(--s-sab-bd)','var(--s-sab-tx)')}">S</span>`;
+      const domDot=f.dom?`<span title="Domingo ${f.dom}" style="${dotStyle(trabDom,'var(--s-dom-bg)','var(--s-dom-bd)','var(--s-dom-tx)')}">D</span>`:'';
       return`<td style="padding:.5rem .6rem;text-align:center;vertical-align:middle">
-        <div style="display:flex;flex-direction:column;align-items:center;gap:3px">${sabCell}${domCell}</div>
+        <div style="display:flex;gap:5px;justify-content:center">${sabDot}${domDot}</div>
       </td>`;
     });
 
-    // Carga visual — bolinha proporcional
+    // Carga visual — barra proporcional
     const pct=fds.length?totalFDS/fds.length:0;
     const cargaColor=pct>=0.75?'var(--red)':pct>=0.5?'var(--amber)':'var(--green)';
 
