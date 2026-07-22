@@ -2761,6 +2761,12 @@ function montarPlano(){
 
   // F.Comp — na mesma semana do plantão de FDS
   if(optFcomp){
+    // Semanas do sistema (dom-sáb) podem ser compartilhadas por duas duplas de
+    // FDS diferentes (o domingo de uma dupla e o sábado da dupla seguinte caem
+    // na mesma semana civil) — por isso é preciso lembrar quais dias úteis já
+    // foram usados por OUTRA colaboradora nessa semana, senão todo mundo cai
+    // sempre na primeira segunda-feira disponível.
+    const usedFcompDays={};
     colabsAtivos().forEach(c=>{
       const fdsWorked=[];
       for(let d=1;d<=D;d++){
@@ -2771,18 +2777,26 @@ function montarPlano(){
         // Encontrar uma segunda ou sexta da mesma semana para F.Comp
         const dw=dwK(k);
         const wkSun=aD(k,-dw); // domingo da semana
-        // Busca primeiro dia útil livre na semana que não seja FDS e não tenha F.Comp ainda
-        for(let dd=1;dd<=5;dd++){
-          const fk=aD(wkSun,dd);
-          const fdw=dwK(fk);
-          if(fdw>=1&&fdw<=5&&fk!==k){
-            // Verifica se é do mesmo mês e se não tem F.Comp ainda
-            const [fy,fm]=fk.split('-').map(Number);
-            if(fm-1===m&&fy===y&&plan[c.id][fk]==='trabalha'&&!Object.values(plan[c.id]).slice(0,Object.keys(plan[c.id]).indexOf(fk)).includes('fcomp')){
-              plan[c.id][fk]='fcomp';
-              break;
+        if(!usedFcompDays[wkSun])usedFcompDays[wkSun]=new Set();
+        // 1ª volta: só aceita dia ainda não usado por ninguém nessa semana.
+        // 2ª volta (fallback): aceita repetir, se não sobrar nenhum dia livre.
+        for(const exigeLivre of [true,false]){
+          let achou=false;
+          for(let dd=1;dd<=5;dd++){
+            const fk=aD(wkSun,dd);
+            const fdw=dwK(fk);
+            if(fdw>=1&&fdw<=5&&fk!==k){
+              const [fy,fm]=fk.split('-').map(Number);
+              const livre=!usedFcompDays[wkSun].has(fk);
+              if(fm-1===m&&fy===y&&plan[c.id][fk]==='trabalha'&&!Object.values(plan[c.id]).slice(0,Object.keys(plan[c.id]).indexOf(fk)).includes('fcomp')&&(livre||!exigeLivre)){
+                plan[c.id][fk]='fcomp';
+                usedFcompDays[wkSun].add(fk);
+                achou=true;
+                break;
+              }
             }
           }
+          if(achou)break;
         }
       });
     });
