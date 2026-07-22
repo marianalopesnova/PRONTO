@@ -712,6 +712,37 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
   </div>
 </div>
 
+<!-- MODAL RENOMEAR USUÁRIO -->
+<div class="mov" id="m-username">
+  <div class="mbox">
+    <h3 id="mu-title">Alterar usuário (login)</h3>
+    <div style="background:var(--bg);border-radius:9px;padding:.55rem .8rem;margin-bottom:.9rem;font-size:.76rem;color:var(--text2);border:1px solid var(--border)" id="mu-ctx"></div>
+    <div class="mfield">
+      <label class="mlbl">Novo usuário</label>
+      <input class="minp" id="mu-novo" placeholder="Ex: ana.lima" autocorrect="off" autocapitalize="off">
+    </div>
+    <div id="mu-err" style="font-size:.73rem;color:var(--red);display:none;margin-bottom:.4rem"></div>
+    <div class="mfoot">
+      <button class="btn btn-g" onclick="cM('m-username')">Cancelar</button>
+      <button class="btn btn-p" onclick="salvarRenomearUsuario()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAR EXCLUSÃO DE USUÁRIO -->
+<div class="mov" id="m-excluir-usuario">
+  <div class="mbox">
+    <h3>Excluir usuário</h3>
+    <div style="background:var(--red-bg);border:1px solid var(--red-bd);border-radius:9px;padding:.7rem .9rem;font-size:.8rem;color:var(--red);line-height:1.6;margin-bottom:1rem" id="eu-ctx"></div>
+    <p style="font-size:.82rem;color:var(--text2);line-height:1.6">O login será removido e a pessoa não conseguirá mais entrar no sistema. O cadastro dela na escala (histórico de plantões) é mantido — só o acesso é excluído. Essa ação não pode ser desfeita.</p>
+    <div id="eu-err" style="font-size:.73rem;color:var(--red);display:none;margin-top:.6rem"></div>
+    <div class="mfoot">
+      <button class="btn btn-g" onclick="cM('m-excluir-usuario')">Cancelar</button>
+      <button class="btn btn-d" onclick="confirmarExcluirUsuario()">Excluir usuário</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL NOVO USUÁRIO -->
 <div class="mov" id="m-nu">
   <div class="mbox">
@@ -2286,7 +2317,9 @@ function renderAcessos(){
       <td style="padding:.65rem .75rem;text-align:center;white-space:nowrap">
         ${CU?.role==='gc'?`
           <button class="btn btn-g btn-sm" style="margin-right:.3rem" onclick="abrirEditAcesso('${u.username}')">Alterar perfil</button>
-          <button class="btn btn-g btn-sm" onclick="abrirRedefinirSenha('${u.username}')">🔑 Senha</button>
+          <button class="btn btn-g btn-sm" style="margin-right:.3rem" onclick="abrirRedefinirSenha('${u.username}')">🔑 Senha</button>
+          <button class="btn btn-g btn-sm" style="margin-right:.3rem" onclick="abrirRenomearUsuario('${u.username}')">✏ Usuário</button>
+          <button class="btn btn-d btn-sm" onclick="abrirExcluirUsuario('${u.username}')">🗑 Excluir</button>
         `:'<span style="font-size:.72rem;color:var(--text3)">Sem permissão</span>'}
       </td>`;
     tbody.appendChild(tr);
@@ -2328,6 +2361,57 @@ async function salvarSenha(){
   cM('m-senha');
   renderAcessos();
   toast(`Senha de ${u.nome} redefinida com sucesso`,'ok');
+}
+
+let _renomearUsername=null;
+function abrirRenomearUsuario(username){
+  if(CU?.role!=='gc'){toast('Apenas o Gente & Cultura pode alterar usuários','e');return}
+  _renomearUsername=username;
+  const u=G.profiles.find(p=>p.username===username);
+  document.getElementById('mu-title').textContent=`Alterar usuário — ${u.nome}`;
+  document.getElementById('mu-ctx').textContent=`Usuário atual: ${username}`;
+  document.getElementById('mu-novo').value=username;
+  document.getElementById('mu-err').style.display='none';
+  document.getElementById('m-username').classList.add('open');
+}
+async function salvarRenomearUsuario(){
+  const novo=document.getElementById('mu-novo').value.trim().toLowerCase();
+  const errEl=document.getElementById('mu-err');
+  if(!novo){errEl.textContent='Informe o novo usuário.';errEl.style.display='block';return}
+  if(!/^[a-z0-9._-]+$/.test(novo)){errEl.textContent='Usuário inválido. Use apenas letras, números, ponto ou traço.';errEl.style.display='block';return}
+  if(novo!==_renomearUsername&&G.profiles.some(p=>p.username===novo)){errEl.textContent='Este usuário já está em uso.';errEl.style.display='block';return}
+  errEl.style.display='none';
+  const u=G.profiles.find(p=>p.username===_renomearUsername);
+  if(novo===_renomearUsername){cM('m-username');return}
+  try{
+    await callAdminUsers({action:'change_username',username:_renomearUsername,new_username:novo});
+  }catch(e){errEl.textContent=e.message;errEl.style.display='block';return}
+  await refreshAcessos();
+  cM('m-username');
+  renderAcessos();
+  toast(`Usuário de ${u.nome} alterado para ${novo}`,'ok');
+}
+
+let _excluirUsername=null;
+function abrirExcluirUsuario(username){
+  if(CU?.role!=='gc'){toast('Apenas o Gente & Cultura pode excluir usuários','e');return}
+  if(username===CU.username){toast('Você não pode excluir seu próprio usuário','e');return}
+  _excluirUsername=username;
+  const u=G.profiles.find(p=>p.username===username);
+  document.getElementById('eu-ctx').innerHTML=`Você está prestes a excluir o login de <strong>${u.nome}</strong> (usuário: ${username}).`;
+  document.getElementById('eu-err').style.display='none';
+  document.getElementById('m-excluir-usuario').classList.add('open');
+}
+async function confirmarExcluirUsuario(){
+  const errEl=document.getElementById('eu-err');
+  const u=G.profiles.find(p=>p.username===_excluirUsername);
+  try{
+    await callAdminUsers({action:'delete_user',username:_excluirUsername});
+  }catch(e){errEl.textContent=e.message;errEl.style.display='block';return}
+  await refreshAcessos();
+  cM('m-excluir-usuario');
+  renderAcessos();
+  toast(`Usuário de ${u.nome} excluído`,'ok');
 }
 
 let _acEditUsername=null;
@@ -2765,11 +2849,11 @@ function resetZoom(){
   }catch(e){}
 })();
 
-['m-l','m-c','m-ac','m-nu','m-senha','m-assist','m-troca','m-ger','m-excluir'].forEach(id=>{
+['m-l','m-c','m-ac','m-nu','m-senha','m-assist','m-troca','m-ger','m-excluir','m-username','m-excluir-usuario'].forEach(id=>{
   const el=document.getElementById(id);
   if(el)el.addEventListener('click',function(e){if(e.target===this)cM(id)});
 });
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){['m-l','m-c','m-ac','m-nu','m-senha','m-assist','m-troca','m-ger','m-excluir'].forEach(id=>cM(id))}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){['m-l','m-c','m-ac','m-nu','m-senha','m-assist','m-troca','m-ger','m-excluir','m-username','m-excluir-usuario'].forEach(id=>cM(id))}});
 </script>
 </body>
 </html>

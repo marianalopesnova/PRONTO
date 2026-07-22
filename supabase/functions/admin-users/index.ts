@@ -126,6 +126,42 @@ Deno.serve(async (req) => {
       return json({ ok: true })
     }
 
+    if (action === 'change_username') {
+      const { username, new_username } = body
+      const { data: profile } = await admin.from('profiles').select('id, nome').eq('username', username).single()
+      if (!profile) return json({ error: 'Usuário não encontrado' }, 404)
+
+      const newEmail = `${new_username}@pronto.internal`
+      const { error: authErr } = await admin.auth.admin.updateUserById(profile.id, { email: newEmail, email_confirm: true })
+      if (authErr) return json({ error: authErr.message }, 400)
+
+      const { error: profileErr } = await admin.from('profiles').update({ username: new_username }).eq('id', profile.id)
+      if (profileErr) return json({ error: profileErr.message }, 400)
+
+      await admin.from('log_auditoria').insert({
+        usuario: profile.nome, email: new_username, campo: 'usuário (login)',
+        valor_anterior: username, valor_novo: new_username, por: caller.email,
+      })
+      return json({ ok: true })
+    }
+
+    if (action === 'delete_user') {
+      const { username } = body
+      const { data: profile } = await admin.from('profiles').select('id, nome').eq('username', username).single()
+      if (!profile) return json({ error: 'Usuário não encontrado' }, 404)
+
+      // Apaga só o login — a colaboradora e o histórico de escala permanecem intactos
+      // (profiles é removido em cascata pela FK ao apagar o auth user).
+      const { error } = await admin.auth.admin.deleteUser(profile.id)
+      if (error) return json({ error: error.message }, 400)
+
+      await admin.from('log_auditoria').insert({
+        usuario: profile.nome, email: username, campo: 'usuário',
+        valor_anterior: 'Login ativo', valor_novo: 'Login excluído', por: caller.email,
+      })
+      return json({ ok: true })
+    }
+
     return json({ error: 'Ação desconhecida' }, 400)
   } catch (e) {
     return json({ error: String(e) }, 500)
