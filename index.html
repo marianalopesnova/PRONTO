@@ -1407,8 +1407,8 @@ function valCell(cid,k,st,ini,fim){
   if(!SC[st]?.isWork)return msgs;
 
   const colab=G.colabs.find(x=>x.id===cid);
-  if(colab&&colab.status&&colab.status!=='ativo'){
-    msgs.push({lv:'error',msg:`Bloqueado: ${colab.nome} está ${colab.status==='ferias'?'de férias':'afastada'} — não pode ser escalada para trabalhar`});
+  if(colab&&!estaDisponivel(colab,k)){
+    msgs.push({lv:'error',msg:`Bloqueado: ${colab.nome} está ${colab.status==='ferias'?'de férias':'afastada'} nessa data — não pode ser escalada para trabalhar`});
     return msgs;
   }
 
@@ -2022,7 +2022,7 @@ function renderApv(){
       const card=document.createElement('div');card.className='apvcard';
       const badge={pendente:`<span class="pill pill-w">⏳ Pendente</span>`,aprovada:`<span class="pill pill-ok">✓ Aprovada</span>`,rejeitada:`<span class="pill pill-e">✕ Rejeitada</span>`}[ap.status];
       const reviewed=ap.reviewedBy?`<span style="font-size:.7rem;color:var(--text3)"> · Revisada por ${ap.reviewedBy} em ${ap.reviewedAt}</span>`:'';
-      const acts=isGC&&ap.status==='pendente'?`<button class="btn btn-ok btn-sm" onclick="revAp('${ap.id}','aprovada')" style="margin-left:.3rem">✓ Aprovar</button><button class="btn btn-d btn-sm" onclick="revAp('${ap.id}','rejeitada')">✕ Rejeitar</button>`:'';
+      const acts=isGC?`${ap.status!=='aprovada'?`<button class="btn btn-ok btn-sm" onclick="revAp('${ap.id}','aprovada')" style="margin-left:.3rem">✓ Aprovar</button>`:''}${ap.status!=='rejeitada'?`<button class="btn btn-d btn-sm" onclick="revAp('${ap.id}','rejeitada')">✕ ${ap.status==='aprovada'?'Revogar aprovação':'Rejeitar'}</button>`:''}`:'';
       const verBtn=`<button class="btn btn-g btn-sm" onclick="revisarEscalaAprovacao(${ap.year},${ap.month-1})">👁 Ver escala</button>`;
       // Ciências confirmadas para esse mês
       const mKey=`${ap.year}-${String(ap.month).padStart(2,'0')}`;
@@ -2481,6 +2481,12 @@ function abrirAssistente(){
 }
 
 function colabsAtivos(){return G.colabs.filter(c=>!c.status||c.status==='ativo')}
+function estaDisponivel(c,dateKey){
+  if(!c.status||c.status==='ativo')return true;
+  if(c.feriasIni&&c.feriasFim)return dateKey<c.feriasIni||dateKey>c.feriasFim;
+  return false; // férias/afastamento sem período definido: indisponível o mês todo
+}
+function colabsDisponiveisEm(dateKey){return G.colabs.filter(c=>estaDisponivel(c,dateKey))}
 
 function atualizarFDS(){
   const m=parseInt(document.getElementById('ast-mes').value);
@@ -2504,7 +2510,7 @@ function atualizarFDS(){
         <div>
           <div style="font-size:.68rem;font-weight:600;color:var(--text3);margin-bottom:.3rem">Sábado — quem trabalha (exatamente 2)</div>
           <div style="display:flex;flex-direction:column;gap:.25rem" id="ast-sab-${d}">
-            ${colabsAtivos().map(c=>`
+            ${colabsDisponiveisEm(dky(y,m,d)).map(c=>`
               <label style="display:flex;align-items:center;gap:.4rem;font-size:.76rem;color:var(--text2);cursor:pointer">
                 <input type="checkbox" class="ast-sab-cb" data-day="${d}" data-cid="${c.id}" value="${c.id}"> ${c.nome.split(' ')[0]}
               </label>`).join('')}
@@ -2513,7 +2519,7 @@ function atualizarFDS(){
         ${dom?`<div>
           <div style="font-size:.68rem;font-weight:600;color:var(--text3);margin-bottom:.3rem">Domingo — quem trabalha (exatamente 2)</div>
           <div style="display:flex;flex-direction:column;gap:.25rem" id="ast-dom-${dom}">
-            ${colabsAtivos().map(c=>`
+            ${colabsDisponiveisEm(dky(y,m,dom)).map(c=>`
               <label style="display:flex;align-items:center;gap:.4rem;font-size:.76rem;color:var(--text2);cursor:pointer">
                 <input type="checkbox" class="ast-dom-cb" data-day="${dom}" data-cid="${c.id}" value="${c.id}"> ${c.nome.split(' ')[0]}
               </label>`).join('')}
@@ -2596,7 +2602,7 @@ function montarPlano(){
     const dw=dwK(k);
     const ds=String(d);
 
-    colabsAtivos().forEach(c=>{
+    colabsDisponiveisEm(k).forEach(c=>{
       if(dw===6){ // sábado
         if((sabSels[ds]||[]).includes(c.id)) plan[c.id][k]='sab';
         else plan[c.id][k]='dsr';
