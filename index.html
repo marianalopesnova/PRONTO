@@ -449,6 +449,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
         </label>
         <button class="btn btn-g btn-sm" id="btn-dup" onclick="dupM()">📋 Duplicar</button>
         <button class="btn btn-g btn-sm" onclick="expCSV()">↓ Exportar</button>
+        <button class="btn btn-d btn-sm" id="btn-limpar" onclick="abrirLimparMes()">🗑 Limpar mês</button>
         <button class="btn btn-g btn-sm" id="btn-aprov" onclick="submitAp()">→ Aprovação</button>
       </div>
       <div class="stats" id="stats"></div>
@@ -665,6 +666,24 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
     <div class="mfoot">
       <button class="btn btn-g" onclick="cM('m-excluir')">Cancelar</button>
       <button class="btn btn-d" onclick="excluirColab()">Confirmar desligamento</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL LIMPAR ESCALA DO MÊS -->
+<div class="mov" id="m-limpar-mes">
+  <div class="mbox">
+    <h3>Limpar escala do mês</h3>
+    <div style="background:var(--red-bg);border:1px solid var(--red-bd);border-radius:9px;padding:.7rem .9rem;font-size:.8rem;color:var(--red);line-height:1.6;margin-bottom:1rem" id="lm-ctx"></div>
+    <p style="font-size:.82rem;color:var(--text2);line-height:1.6;margin-bottom:.8rem">Todos os plantões lançados para todas as colaboradoras nesse mês serão apagados. Essa ação não pode ser desfeita.</p>
+    <div class="mfield">
+      <label class="mlbl">Para confirmar, digite <strong>LIMPAR</strong></label>
+      <input class="minp" id="lm-confirm-input" placeholder="LIMPAR" autocomplete="off">
+    </div>
+    <div id="lm-err" style="font-size:.73rem;color:var(--red);display:none;margin-top:.4rem"></div>
+    <div class="mfoot">
+      <button class="btn btn-g" onclick="cM('m-limpar-mes')">Cancelar</button>
+      <button class="btn btn-d" onclick="confirmarLimparMes()">Limpar escala do mês</button>
     </div>
   </div>
 </div>
@@ -1406,6 +1425,10 @@ function valAll(){
     const wksDSR={};
     dias.forEach(({k,dw,st})=>{const ws=aD(k,-dw);if(!wksDSR[ws])wksDSR[ws]={dias:[],temDSR:false};wksDSR[ws].dias.push(k);if(st==='dsr'||st==='dsr-dom')wksDSR[ws].temDSR=true});
     Object.entries(wksDSR).forEach(([ws,{dias:wDias,temDSR}])=>{
+      // Semana "fragmento" na virada do mês (poucos dias visíveis porque o
+      // resto da semana cai no mês anterior, fora do que é gerenciado aqui)
+      // não deve gerar falso alerta de falta de folga.
+      if(wDias.length<4)return;
       const diasTrabalhados=wDias.filter(k=>SC[gS(c.id,k)]?.isWork);
       if(diasTrabalhados.length&&!temDSR){
         al.push({lv:'error',msg:`${c.nome}: Semana de ${ws} sem folga registrada — descanso semanal obrigatório`});
@@ -1731,7 +1754,7 @@ function renderActs(){
   const role=CU?.role||'';
   const canEdit=(role==='gestora'||role==='gc');
   // Mostra/esconde botões que dependem de permissão
-  ['btn-assist','btn-import','btn-dup','btn-aprov'].forEach(id=>{
+  ['btn-assist','btn-import','btn-dup','btn-limpar','btn-aprov'].forEach(id=>{
     const el=document.getElementById(id);
     if(el)el.style.display=canEdit?'':'none';
   });
@@ -2152,6 +2175,30 @@ function dupM(){
   const dupasUsadas=[...new Set([...dupSabs,...dupDoms])].slice(0,2).join(', ');
   document.getElementById('duptxt').innerHTML=`<strong>Escala de ${MONTHS[m]} duplicada para ${MONTHS[nM]} ${nY}.</strong> Revise os fins de semana e <strong>alterne as duplas</strong> para não sobrecarregar as mesmas colaboradoras. ${dupasUsadas?`Duplas usadas em ${MONTHS[m]}: ${dupasUsadas}.`:''}`;
   render();
+}
+
+function abrirLimparMes(){
+  if(CU?.role!=='gestora'&&CU?.role!=='gc'){toast('Sem permissão','e');return}
+  const{vy:y,vm:m}=G;
+  document.getElementById('lm-ctx').innerHTML=`Você está prestes a apagar <strong>toda a escala de ${MONTHS[m]} ${y}</strong> para todas as colaboradoras.`;
+  document.getElementById('lm-confirm-input').value='';
+  document.getElementById('lm-err').style.display='none';
+  document.getElementById('m-limpar-mes').classList.add('open');
+}
+async function confirmarLimparMes(){
+  const input=document.getElementById('lm-confirm-input').value.trim().toUpperCase();
+  const errEl=document.getElementById('lm-err');
+  if(input!=='LIMPAR'){errEl.textContent='Digite LIMPAR para confirmar.';errEl.style.display='block';return}
+  errEl.style.display='none';
+  const{vy:y,vm:m}=G;
+  const D=dim(y,m);
+  const primeiro=dky(y,m,1),ultimo=dky(y,m,D);
+  const{error}=await sb.from('escala').delete().gte('data',primeiro).lte('data',ultimo);
+  if(error){errEl.textContent='Erro ao limpar: '+error.message;errEl.style.display='block';return}
+  G.colabs.forEach(c=>{for(let d=1;d<=D;d++){if(G.escala[c.id])delete G.escala[c.id][dky(y,m,d)]}});
+  cM('m-limpar-mes');
+  render();
+  toast(`Escala de ${MONTHS[m]} ${y} apagada`,'ok');
 }
 
 async function salvarSnapshotHistorico(y,m){
@@ -2857,11 +2904,11 @@ function resetZoom(){
   }catch(e){}
 })();
 
-['m-l','m-c','m-ac','m-nu','m-senha','m-assist','m-troca','m-ger','m-excluir','m-username','m-excluir-usuario'].forEach(id=>{
+['m-l','m-c','m-ac','m-nu','m-senha','m-assist','m-troca','m-ger','m-excluir','m-username','m-excluir-usuario','m-limpar-mes'].forEach(id=>{
   const el=document.getElementById(id);
   if(el)el.addEventListener('click',function(e){if(e.target===this)cM(id)});
 });
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){['m-l','m-c','m-ac','m-nu','m-senha','m-assist','m-troca','m-ger','m-excluir','m-username','m-excluir-usuario'].forEach(id=>cM(id))}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){['m-l','m-c','m-ac','m-nu','m-senha','m-assist','m-troca','m-ger','m-excluir','m-username','m-excluir-usuario','m-limpar-mes'].forEach(id=>cM(id))}});
 </script>
 </body>
 </html>
