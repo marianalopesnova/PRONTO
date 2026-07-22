@@ -1403,7 +1403,11 @@ function valAll(){
       // Semana: domingo desta semana (fim da semana = sábado+6 ou domingo)
       const wkSun=aD(k,-dw); // domingo de início da semana
       const wkSat=aD(wkSun,6); // sábado fim da semana
-      const hasFcInWeek=dias.some(x=>x.k>=wkSun&&x.k<=wkSat&&x.st==='fcomp');
+      // Verifica a semana real inteira via G.escala (não só os dias do mês em
+      // exibição) — um F.Comp lançado no mês anterior/seguinte, mas dentro da
+      // mesma semana civil, já conta como compensação válida.
+      let hasFcInWeek=false;
+      for(let i=0;i<7;i++){if(gS(c.id,aD(wkSun,i))==='fcomp'){hasFcInWeek=true;break}}
       if(!hasFcInWeek){
         // Verifica se a folga veio em outra semana
         const anyFc=dias.some(x=>x.k>k&&x.st==='fcomp');
@@ -1421,9 +1425,10 @@ function valAll(){
     // R6 – Máx 10h/dia
     dias.forEach(({k,st,e})=>{if(!SC[st]?.isWork||!e?.ini||!e?.fim)return;const h=dH(e.ini,e.fim);if(h>10){al.push({lv:'error',msg:`${c.nome}: ${k} — ${h.toFixed(1)}h excede 10h/dia`});mk(k,'error')}});
 
-    // R2b — DSR obrigatório toda semana
+    // R2b — DSR obrigatório toda semana (férias/afastamento no período já
+    // supera a exigência de descanso semanal, então também satisfaz a regra)
     const wksDSR={};
-    dias.forEach(({k,dw,st})=>{const ws=aD(k,-dw);if(!wksDSR[ws])wksDSR[ws]={dias:[],temDSR:false};wksDSR[ws].dias.push(k);if(st==='dsr'||st==='dsr-dom')wksDSR[ws].temDSR=true});
+    dias.forEach(({k,dw,st})=>{const ws=aD(k,-dw);if(!wksDSR[ws])wksDSR[ws]={dias:[],temDSR:false};wksDSR[ws].dias.push(k);if(st==='dsr'||st==='dsr-dom'||!estaDisponivel(c,k))wksDSR[ws].temDSR=true});
     Object.entries(wksDSR).forEach(([ws,{dias:wDias,temDSR}])=>{
       // Semana "fragmento" na virada do mês (poucos dias visíveis porque o
       // resto da semana cai no mês anterior, fora do que é gerenciado aqui)
