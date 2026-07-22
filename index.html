@@ -1295,6 +1295,13 @@ async function sbDeleteEscala(colab_id,data){
 }
 
 // ═══ VALIDATION ═══
+function valAllFor(y,m){
+  const origY=G.vy,origM=G.vm;
+  G.vy=y;G.vm=m;
+  const result=valAll();
+  G.vy=origY;G.vm=origM;
+  return result;
+}
 function valAll(){
   const al=[],vi={};
   const mk=(k,lv)=>{if(!vi[k]||vi[k]==='warning')vi[k]=lv};
@@ -2007,15 +2014,22 @@ function renderApv(){
       const badge={pendente:`<span class="pill pill-w">⏳ Pendente</span>`,aprovada:`<span class="pill pill-ok">✓ Aprovada</span>`,rejeitada:`<span class="pill pill-e">✕ Rejeitada</span>`}[ap.status];
       const reviewed=ap.reviewedBy?`<span style="font-size:.7rem;color:var(--text3)"> · Revisada por ${ap.reviewedBy} em ${ap.reviewedAt}</span>`:'';
       const acts=isGC&&ap.status==='pendente'?`<button class="btn btn-ok btn-sm" onclick="revAp('${ap.id}','aprovada')" style="margin-left:.3rem">✓ Aprovar</button><button class="btn btn-d btn-sm" onclick="revAp('${ap.id}','rejeitada')">✕ Rejeitar</button>`:'';
+      const verBtn=`<button class="btn btn-g btn-sm" onclick="revisarEscalaAprovacao(${ap.year},${ap.month-1})">👁 Ver escala</button>`;
       // Ciências confirmadas para esse mês
       const mKey=`${ap.year}-${String(ap.month).padStart(2,'0')}`;
       const cienciasDoMes=G.colabs.filter(c=>G.ciencias[`ciencia-${c.id}-${mKey}`]);
       const cienciasBadge=cienciasDoMes.length>0
         ?`<span class="pill pill-ok" style="font-size:.65rem">✓ ${cienciasDoMes.length}/${G.colabs.length} ciências</span>`
         :`<span class="pill pill-w" style="font-size:.65rem">0/${G.colabs.length} ciências</span>`;
+      // Violações CLT desse mês específico (sem trocar o mês exibido no calendário)
+      const{al:alMes}=valAllFor(ap.year,ap.month-1);
+      const erMes=alMes.filter(a=>a.lv==='error').length,waMes=alMes.filter(a=>a.lv==='warning').length;
+      const cltBadge=erMes>0?`<span class="pill pill-e" style="font-size:.65rem">✕ ${erMes} violaç${erMes>1?'ões':'ão'}</span>`
+        :waMes>0?`<span class="pill pill-w" style="font-size:.65rem">⚠ ${waMes} alerta${waMes>1?'s':''}</span>`
+        :`<span class="pill pill-ok" style="font-size:.65rem">✓ CLT ok</span>`;
       card.innerHTML=`<div class="apvrow"><div style="flex:1"><div class="apvmo" style="display:flex;align-items:center;gap:.5rem">${MONTHS[ap.month-1]} ${ap.year}</div><div class="apvby">Por ${ap.by} &nbsp;·&nbsp; ${ap.at}${reviewed}</div>
         ${cienciasDoMes.length?`<div style="font-size:.72rem;color:var(--text3);margin-top:4px">Confirmaram: ${cienciasDoMes.map(c=>c.nome.split(' ')[0]).join(', ')}</div>`:''}
-      </div><div style="display:flex;align-items:center;gap:.35rem;flex-wrap:wrap">${cienciasBadge}${badge}${acts}</div></div>`;
+      </div><div style="display:flex;align-items:center;gap:.35rem;flex-wrap:wrap">${cltBadge}${cienciasBadge}${badge}${verBtn}${acts}</div></div>`;
       el.appendChild(card);
     });
   }
@@ -2045,6 +2059,13 @@ function renderApv(){
       el.appendChild(card);
     });
   }
+}
+
+function revisarEscalaAprovacao(year,month0){
+  G.vy=year;G.vm=month0;
+  swV('e',document.getElementById('nv-e'));
+  render();
+  toast(`Revisando escala ao vivo de ${MONTHS[month0]} ${year} — confira os alertas antes de aprovar`,'ok');
 }
 
 function verHistorico(hk){
