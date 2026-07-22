@@ -1343,8 +1343,8 @@ function valAll(){
         const temDSR=dias.some(x=>x.k>=ws&&x.k<=aD(ws,6)&&(x.st==='dsr'||x.st==='dsr-dom'));
         const temFolga2=dias.some(x=>x.k>=ws&&x.k<=aD(ws,6)&&(x.st==='fcomp'||x.st==='dsr'||x.st==='dsr-dom'));
         const totalFolgas=dias.filter(x=>x.k>=ws&&x.k<=aD(ws,6)&&(x.st==='fcomp'||x.st==='dsr'||x.st==='dsr-dom')).length;
-        if(!temDSR) al.push({lv:'warning',msg:`${c.nome}: Semana de ${ws} — 5 dias sem DSR registrado (descanso obrigatório)`});
-        if(totalFolgas<2) al.push({lv:'warning',msg:`${c.nome}: Semana de ${ws} — apenas 1 folga (mín. 2 folgas/semana na escala 5x2)`});
+        if(!temDSR){al.push({lv:'error',msg:`${c.nome}: Semana de ${ws} — 5 dias sem DSR registrado (descanso obrigatório)`});ds.forEach(k=>mk(k,'error'))}
+        if(totalFolgas<2){al.push({lv:'error',msg:`${c.nome}: Semana de ${ws} — apenas 1 folga (mín. 2 folgas/semana na escala 5x2)`});ds.forEach(k=>mk(k,'error'))}
       }
     });
 
@@ -1375,8 +1375,11 @@ function valAll(){
     const wksDSR={};
     dias.forEach(({k,dw,st})=>{const ws=aD(k,-dw);if(!wksDSR[ws])wksDSR[ws]={dias:[],temDSR:false};wksDSR[ws].dias.push(k);if(st==='dsr'||st==='dsr-dom')wksDSR[ws].temDSR=true});
     Object.entries(wksDSR).forEach(([ws,{dias:wDias,temDSR}])=>{
-      const temTrabalho=wDias.some(k=>SC[gS(c.id,k)]?.isWork);
-      if(temTrabalho&&!temDSR) al.push({lv:'warning',msg:`${c.nome}: Semana de ${ws} sem DSR registrado — descanso semanal obrigatório`});
+      const diasTrabalhados=wDias.filter(k=>SC[gS(c.id,k)]?.isWork);
+      if(diasTrabalhados.length&&!temDSR){
+        al.push({lv:'error',msg:`${c.nome}: Semana de ${ws} sem DSR registrado — descanso semanal obrigatório`});
+        diasTrabalhados.forEach(k=>mk(k,'error'));
+      }
     });
 
     // R7 – FDS consecutivos sem folga (alerta)
