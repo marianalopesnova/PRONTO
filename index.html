@@ -996,9 +996,21 @@ function toggleSb(){
 
 
 // ═══ VISÃO COLABORADOR ═══
+function mesMaisRecenteAprovado(){
+  const aprovadas=G.approvals.filter(a=>a.status==='aprovada');
+  if(!aprovadas.length)return null;
+  return aprovadas.reduce((best,a)=>(!best||a.year>best.year||(a.year===best.year&&a.month>best.month))?a:best,null);
+}
+
 function renderColabView(){
   const c=G.colabs.find(x=>x.id===CU.colabId);
   if(!c)return;
+
+  // A colaboradora deve ver a escala aprovada mais recente, não o mês "atual"
+  // do relógio — normalmente a escala do próximo mês é aprovada com
+  // antecedência, antes dele começar.
+  const maisRecente=mesMaisRecenteAprovado();
+  if(maisRecente){G.vy=maisRecente.year;G.vm=maisRecente.month-1}
 
   const{vy:y,vm:m}=G;
   const mesLabel=document.getElementById('col-mes-label');
