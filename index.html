@@ -1442,7 +1442,10 @@ function valAll(){
     });
 
     // R7 – FDS consecutivos sem folga (alerta)
-    const weFDS=[...new Set(dias.filter(x=>(x.dw===6||x.dw===0)&&SC[x.st]?.isWE).map(({k,dw})=>aD(k,-dw)))].sort();
+    // Identifica cada fim de semana pelo sábado (domingo conta como o sábado
+    // anterior) — assim sábado+domingo do MESMO fim de semana não são
+    // confundidos com dois fins de semana diferentes.
+    const weFDS=[...new Set(dias.filter(x=>(x.dw===6||x.dw===0)&&SC[x.st]?.isWE).map(({k,dw})=>dw===6?k:aD(k,-1)))].sort();
     for(let i=1;i<weFDS.length;i++){if(Math.round((pK(weFDS[i])-pK(weFDS[i-1]))/86400000)===7){const ok=dias.some(x=>x.k>weFDS[i-1]&&x.k<weFDS[i]&&(x.st==='fcomp'||x.st==='dsr'||x.st==='dsr-dom'));if(!ok)al.push({lv:'warning',msg:`${c.nome}: FDS consecutivos sem folga compensatória entre eles`})}}
   });
 
