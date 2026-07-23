@@ -349,7 +349,9 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
     <div style="background:var(--navy);padding:0 1rem;height:var(--hh);display:flex;align-items:center;gap:.6rem;box-shadow:0 3px 12px rgba(13,43,85,.25);flex-shrink:0;z-index:10">
       <img src="logo.png" alt="Pronto" style="height:20px;width:auto;background:#fff;border-radius:6px;padding:4px 8px">
       <div class="hd-sep"></div>
-      <span style="font-size:.78rem;color:rgba(255,255,255,.55)" id="col-mes-label">Minha Escala</span>
+      <button onclick="colabChM(-1)" style="background:none;border:none;color:rgba(255,255,255,.6);font-size:1rem;cursor:pointer;padding:.2rem .4rem;line-height:1" aria-label="Mês anterior">‹</button>
+      <span style="font-size:.78rem;color:rgba(255,255,255,.85);min-width:110px;text-align:center" id="col-mes-label">Minha Escala</span>
+      <button onclick="colabChM(1)" style="background:none;border:none;color:rgba(255,255,255,.6);font-size:1rem;cursor:pointer;padding:.2rem .4rem;line-height:1" aria-label="Próximo mês">›</button>
       <div style="margin-left:auto;display:flex;align-items:center;gap:.6rem">
         <div class="huser" id="col-huser"></div>
         <button class="btn btn-g btn-sm" style="color:rgba(255,255,255,.6);border-color:rgba(255,255,255,.18)" onclick="doLogout()">Sair</button>
@@ -938,6 +940,7 @@ async function doLogout(){
   unsubscribeRealtime();
   await sb.auth.signOut();
   CU=null;
+  _colabMesInit=false;
   ['scr-app','scr-colab'].forEach(id=>document.getElementById(id).classList.add('gone'));
   document.getElementById('scr-login').classList.remove('gone');
   document.getElementById('l-email').value='';
@@ -1002,15 +1005,25 @@ function mesMaisRecenteAprovado(){
   return aprovadas.reduce((best,a)=>(!best||a.year>best.year||(a.year===best.year&&a.month>best.month))?a:best,null);
 }
 
+let _colabMesInit=false;
+function colabChM(d){
+  G.vm+=d;if(G.vm<0){G.vm=11;G.vy--}if(G.vm>11){G.vm=0;G.vy++}
+  renderColabView();
+}
+
 function renderColabView(){
   const c=G.colabs.find(x=>x.id===CU.colabId);
   if(!c)return;
 
-  // A colaboradora deve ver a escala aprovada mais recente, não o mês "atual"
-  // do relógio — normalmente a escala do próximo mês é aprovada com
-  // antecedência, antes dele começar.
-  const maisRecente=mesMaisRecenteAprovado();
-  if(maisRecente){G.vy=maisRecente.year;G.vm=maisRecente.month-1}
+  // Ao entrar na tela pela 1ª vez (login), a colaboradora começa vendo a
+  // escala aprovada mais recente, não o mês "atual" do relógio — normalmente
+  // a escala do próximo mês é aprovada com antecedência. Depois disso, ela
+  // pode navegar livremente com as setas ‹ › sem ser puxada de volta.
+  if(!_colabMesInit){
+    const maisRecente=mesMaisRecenteAprovado();
+    if(maisRecente){G.vy=maisRecente.year;G.vm=maisRecente.month-1}
+    _colabMesInit=true;
+  }
 
   const{vy:y,vm:m}=G;
   const mesLabel=document.getElementById('col-mes-label');
