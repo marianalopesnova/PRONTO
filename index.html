@@ -1419,7 +1419,7 @@ function valAll(){
         // no totalFolgas logo abaixo)
         const temDSR=dias.some(x=>x.k>=ws&&x.k<=aD(ws,6)&&(x.st==='dsr'||x.st==='dsr-dom'||x.st==='fcomp'||!estaDisponivel(c,x.k)));
         const temFolga2=dias.some(x=>x.k>=ws&&x.k<=aD(ws,6)&&(x.st==='fcomp'||x.st==='dsr'||x.st==='dsr-dom'));
-        const totalFolgas=dias.filter(x=>x.k>=ws&&x.k<=aD(ws,6)&&(x.st==='fcomp'||x.st==='dsr'||x.st==='dsr-dom')).length;
+        const totalFolgas=dias.filter(x=>x.k>=ws&&x.k<=aD(ws,6)&&(x.st==='fcomp'||x.st==='dsr'||x.st==='dsr-dom'||!estaDisponivel(c,x.k))).length;
         if(!temDSR){al.push({lv:'error',msg:`${c.nome}: Semana de ${ws} — 5 dias sem folga registrada (descanso obrigatório)`});ds.forEach(k=>mk(k,'error'))}
         if(totalFolgas<2){al.push({lv:'error',msg:`${c.nome}: Semana de ${ws} — apenas 1 folga (mín. 2 folgas/semana na escala 5x2)`});ds.forEach(k=>mk(k,'error'))}
       }
