@@ -1414,8 +1414,10 @@ function valAll(){
         al.push({lv:'error',msg:`${c.nome}: Semana de ${ws} — ${ds.length} dias trabalhados (máx. 5 — regra 5x2)`});
         ds.forEach(k=>mk(k,'error'));
       } else if(ds.length===5){
-        // Verifica se tem pelo menos 2 folgas (DSR + outra)
-        const temDSR=dias.some(x=>x.k>=ws&&x.k<=aD(ws,6)&&(x.st==='dsr'||x.st==='dsr-dom'));
+        // Verifica se tem pelo menos 2 folgas (folga semanal + outra — qualquer
+        // combinação de Folga/Folga(Dom)/F.Comp conta, mesma definição usada
+        // no totalFolgas logo abaixo)
+        const temDSR=dias.some(x=>x.k>=ws&&x.k<=aD(ws,6)&&(x.st==='dsr'||x.st==='dsr-dom'||x.st==='fcomp'||!estaDisponivel(c,x.k)));
         const temFolga2=dias.some(x=>x.k>=ws&&x.k<=aD(ws,6)&&(x.st==='fcomp'||x.st==='dsr'||x.st==='dsr-dom'));
         const totalFolgas=dias.filter(x=>x.k>=ws&&x.k<=aD(ws,6)&&(x.st==='fcomp'||x.st==='dsr'||x.st==='dsr-dom')).length;
         if(!temDSR){al.push({lv:'error',msg:`${c.nome}: Semana de ${ws} — 5 dias sem folga registrada (descanso obrigatório)`});ds.forEach(k=>mk(k,'error'))}
@@ -1450,10 +1452,12 @@ function valAll(){
     // R6 – Máx 10h/dia
     dias.forEach(({k,st,e})=>{if(!SC[st]?.isWork||!e?.ini||!e?.fim)return;const h=dH(e.ini,e.fim);if(h>10){al.push({lv:'error',msg:`${c.nome}: ${k} — ${h.toFixed(1)}h excede 10h/dia`});mk(k,'error')}});
 
-    // R2b — DSR obrigatório toda semana (férias/afastamento no período já
-    // supera a exigência de descanso semanal, então também satisfaz a regra)
+    // R2b — folga semanal obrigatória (férias/afastamento no período já supera
+    // a exigência de descanso, e F.Comp também conta como folga — igual à
+    // contagem usada na regra "mín. 2 folgas/semana" logo acima, para não
+    // haver duas definições diferentes de "folga" no mesmo validador)
     const wksDSR={};
-    dias.forEach(({k,dw,st})=>{const ws=aD(k,-dw);if(!wksDSR[ws])wksDSR[ws]={dias:[],temDSR:false};wksDSR[ws].dias.push(k);if(st==='dsr'||st==='dsr-dom'||!estaDisponivel(c,k))wksDSR[ws].temDSR=true});
+    dias.forEach(({k,dw,st})=>{const ws=aD(k,-dw);if(!wksDSR[ws])wksDSR[ws]={dias:[],temDSR:false};wksDSR[ws].dias.push(k);if(st==='dsr'||st==='dsr-dom'||st==='fcomp'||!estaDisponivel(c,k))wksDSR[ws].temDSR=true});
     Object.entries(wksDSR).forEach(([ws,{dias:wDias,temDSR}])=>{
       // Semana "fragmento" na virada do mês (poucos dias visíveis porque o
       // resto da semana cai no mês anterior, fora do que é gerenciado aqui)
